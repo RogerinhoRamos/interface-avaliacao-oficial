@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Avaliação de Desempenho</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; }
+    header { padding: 20px; background: linear-gradient(90deg, #0066cc, #33ccff); color: white; text-align: center; }
+    .tabs { display: flex; justify-content: center; background: #ddd; padding: 10px; }
+    .tabs button { background: none; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; color: #333; border-bottom: 3px solid transparent; }
+    .tabs button.active { border-color: #0066cc; color: #0066cc; }
+    .tab-content { display: none; padding: 20px; }
+    .tab-content.active { display: block; }
+    .card { background: white; padding: 20px; margin: 20px 0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .status { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; color: white; }
+    .status.complete { background: #28a745; }
+    .status.pendente-gestor { background: #ffc107; color: black; }
+    .status.pendente-colab { background: #dc3545; }
+    .competencia { margin-top: 15px; padding: 15px; background: #f0f0f0; border-radius: 6px; }
+    .assinatura { font-family: 'Brush Script MT', cursive; font-size: 1.6em; background: linear-gradient(to right, #8E2DE2, #4A00E0, #00C9FF, #92FE9D); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent; animation: gradientMove 6s linear infinite; background-size: 300% 100%; text-align: center; }
+    @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    footer { text-align: center; padding: 30px 10px; font-size: 0.85em; color: #999; background: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Painel de Avaliação de Desempenho</h1>
+    <div class="assinatura">Rogerinho Ramos</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="colaborador">Colaborador</button>
+    <button class="tab-btn" data-tab="equipe">Equipe/Função</button>
+  </div>
+
+  <div id="colaborador" class="tab-content active">
+    <div class="card">
+      <div class="card-header">
+        <strong>Importar Equipe:</strong> Envie o PDF com nomes e funções para gerar os cards automaticamente.
+      </div>
+      <div class="competencia">
+        <input type="file" id="pdfEquipe" accept="application/pdf" />
+      </div>
+    </div>
+    <div id="cardsContainer"></div>
+  </div>
+
+  <div id="equipe" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <strong>Resumo Equipe:</strong> Comparativo de competências e status de preenchimento.
+      </div>
+      <div class="competencia">
+        <canvas id="graficoRadar" width="400" height="400"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2025 Painel de Avaliação - Todos os direitos reservados.<br/>
+    <div class="assinatura">Rogerinho Ramos</div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.getElementById('pdfEquipe').addEventListener('change', async function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const strings = content.items.map(item => item.str);
+        fullText += strings.join('\n') + '\n';
+      }
+
+      const lines = fullText.split(/\n/).map(l => l.trim()).filter(l => l);
+      const container = document.getElementById('cardsContainer');
+      container.innerHTML = '';
+
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].match(/^\d{1,2}$/) && lines[i+1] && lines[i+2]) {
+          const nome = lines[i+1];
+          const funcao = lines[i+2];
+          const id = nome.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.dataset.id = id;
+          card.innerHTML = `
+            <div class="card-header">
+              <div><strong>Colaborador:</strong> ${nome}<br/><strong>Função:</strong> ${funcao}</div>
+              <div class="status">Avaliação não iniciada</div>
+            </div>
+            <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
+          `;
+          container.appendChild(card);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

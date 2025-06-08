@@ -93,6 +93,7 @@
       const lines = fullText.split(/\n/).map(l => l.trim()).filter(l => l);
       const container = document.getElementById('cardsContainer');
       container.innerHTML = '';
+let encontrouColaboradores = false;
 
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].match(/^\d{1,2}$/) && lines[i+1] && lines[i+2]) {
@@ -110,17 +111,27 @@
             <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
           `;
           container.appendChild(card);
-
-      const feedback = document.getElementById('uploadFeedback');
-feedback.innerText = 'Equipe carregada com sucesso!';
-feedback.style.opacity = '1';
-setTimeout(() => {
-  feedback.style.transition = 'opacity 1s';
-  feedback.style.opacity = '0';
-}, 3000);
-        }
-      }
-    });
+encontrouColaboradores = true;
+            }
+    }
+    const feedback = document.getElementById('uploadFeedback');
+    if (encontrouColaboradores) {
+      feedback.innerText = 'Equipe carregada com sucesso!';
+      feedback.style.color = '#0066cc';
+      feedback.style.opacity = '1';
+      setTimeout(() => {
+        feedback.style.transition = 'opacity 1s';
+        feedback.style.opacity = '0';
+      }, 3000);
+    } else {
+      feedback.innerText = '❌ Nenhum colaborador encontrado no PDF.';
+      feedback.style.color = '#dc3545';
+      feedback.style.opacity = '1';
+      setTimeout(() => {
+        feedback.style.opacity = '0';
+      }, 4000);
+    }
+  });
   </script>
 </body>
 </html>

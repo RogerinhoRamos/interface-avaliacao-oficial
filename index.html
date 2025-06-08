@@ -90,7 +90,11 @@
         fullText += strings.join('\n') + '\n';
       }
 
-      const lines = fullText.split(/\n/).map(l => l.trim()).filter(l => l);
+      console.log("TEXTO EXTRAÍDO DO PDF:");
+console.log(fullText);
+
+const lines = fullText.split(/
+/).map(l => l.trim()).filter(l => l);
       const container = document.getElementById('cardsContainer');
       container.innerHTML = '';
 let encontrouColaboradores = false;

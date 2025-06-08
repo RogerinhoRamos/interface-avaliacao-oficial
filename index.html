@@ -4,11 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Avaliação de Desempenho</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; }
     header { padding: 20px; background: linear-gradient(90deg, #0066cc, #33ccff); color: white; text-align: center; }
@@ -91,25 +88,25 @@
   <div id="colaborador" class="tab-content active">
     <div class="card">
       <div class="card-header">
-        <strong>Importar Equipe:</strong> Envie o PDF com nomes e funções para gerar os cards automaticamente.
+        <strong>Importar Equipe:</strong> Envie o arquivo Excel com organograma para gerar os cards automaticamente.
       </div>
       
       <div class="info-box">
-        <strong>📄 Formato de PDF Compatível:</strong><br/>
-        • <strong>Workday:</strong> Relatórios de organograma/estrutura da equipe<br/>
-        • <strong>Estrutura esperada:</strong> Nome do colaborador seguido da função/cargo<br/>
-        • <strong>Exemplo:</strong> "João Silva" → "Preparador Operador CNC"<br/>
-        • <strong>Formatos suportados:</strong> Listas de colaboradores, organigramas, relatórios de RH
+        <strong>📊 Formato de Excel Compatível:</strong><br/>
+        • <strong>Workday:</strong> Relatórios de organograma/estrutura da equipe (.xlsx)<br/>
+        • <strong>Estrutura esperada:</strong> Coluna "Nome" e coluna "Detalhes da linha 1" (função)<br/>
+        • <strong>Exemplo:</strong> Nome: "João Silva" | Função: "Preparador Operador CNC"<br/>
+        • <strong>Formatos suportados:</strong> Planilhas de colaboradores, organigramas, relatórios de RH
       </div>
       
       <div class="competencia">
-        <label for="pdfEquipe" class="btn-custom" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; margin-right: 10px;">📄 Carregar PDF da Equipe</label>
+        <label for="excelEquipe" class="btn-custom" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; margin-right: 10px;">📊 Carregar Excel da Equipe</label>
         <button id="testeExemplo" class="btn-custom" style="background:#28a745; color:#fff; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-right: 10px;">🧪 Teste com Dados de Exemplo</button>
         <button id="limparDados" class="btn-custom" style="background:#dc3545; color:#fff; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">🗑️ Limpar Dados</button>
-        <input type="file" id="pdfEquipe" accept="application/pdf" style="display:none;" />
+        <input type="file" id="excelEquipe" accept=".xlsx,.xls" style="display:none;" />
         <div id="uploadFeedback" style="margin-top: 10px; font-weight:bold; color:#0066cc; opacity:0; transition:opacity 1s;"></div>
         <div class="loading" id="loading">
-          <p>⏳ Processando PDF...</p>
+          <p>⏳ Processando Excel...</p>
         </div>
         <div id="debugInfo" class="debug-info" style="display: none;"></div>
       </div>
@@ -133,9 +130,11 @@
   </footer>
 
   <script>
-    // Função para mostrar feedback
+    // Função para mostrar feedback (com verificação de segurança)
     function showFeedback(message, type = 'info') {
-      const feedback = document.getElementById('uploadFeedback');
+      const feedback = getElement('uploadFeedback');
+      if (!feedback) return;
+      
       feedback.innerText = message;
       feedback.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#0066cc';
       feedback.style.opacity = '1';
@@ -145,9 +144,10 @@
       }, type === 'error' ? 5000 : 3000);
     }
 
-    // Função para mostrar informações de debug (com limite de tamanho)
+    // Função para mostrar informações de debug (com limite de tamanho e verificação de segurança)
     function showDebug(info) {
-      const debugDiv = document.getElementById('debugInfo');
+      const debugDiv = getElement('debugInfo');
+      if (!debugDiv) return;
       
       // Truncar se muito longo
       let debugContent = info;
@@ -159,9 +159,12 @@
       debugDiv.style.display = 'block';
     }
 
-    // Função para mostrar loading
+    // Função para mostrar loading (com verificação de segurança)
     function showLoading(show) {
-      document.getElementById('loading').style.display = show ? 'block' : 'none';
+      const loading = getElement('loading');
+      if (loading) {
+        loading.style.display = show ? 'block' : 'none';
+      }
     }
 
     // Configuração das abas
@@ -172,22 +175,86 @@
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab).classList.add('active');
       });
+
+    // Função para processar dados do Excel
+    function parseExcelData(dados, nomePlanilha, debugInfo) {
+      const colaboradores = [];
+      let debugLocal = '';
+      
+      if (dados.length < 2) return { colaboradores, debugInfo: debugLocal };
+      
+      const cabecalho = dados[0];
+      console.log('Cabeçalho da planilha:', cabecalho);
+      
+      // Identificar colunas importantes (flexível para diferentes formatos)
+      let colNome = -1, colFuncao = -1, colLocal = -1;
+      
+      cabecalho.forEach((col, index) => {
+        const colLower = (col || '').toString().toLowerCase();
+        if (colLower.includes('nome') && !colLower.includes('organiz')) {
+          colNome = index;
+        } else if (colLower.includes('detalhes') || colLower.includes('função') || colLower.includes('cargo') || colLower.includes('linha 1')) {
+          colFuncao = index;
+        } else if (colLower.includes('local') || colLower.includes('cidade') || colLower.includes('linha 3')) {
+          colLocal = index;
+        }
+      });
+      
+      debugLocal += `Colunas identificadas - Nome: ${colNome}, Função: ${colFuncao}, Local: ${colLocal}<br/>`;
+      
+      // Se não encontrou as colunas específicas, tentar padrão genérico
+      if (colNome === -1 || colFuncao === -1) {
+        // Assumir que Nome está na coluna 1 (B) e Função na coluna 3 (D) - padrão Workday
+        if (cabecalho.length > 3) {
+          colNome = 1;
+          colFuncao = 3;
+          colLocal = 5;
+        } else {
+          // Formato mais simples: Nome, Função
+          colNome = 0;
+          colFuncao = 1;
+        }
+      }
+      
+      // Processar cada linha de dados
+      for (let i = 1; i < dados.length; i++) {
+        const linha = dados[i];
+        
+        if (!linha || linha.length === 0) continue;
+        
+        const nome = linha[colNome] ? linha[colNome].toString().trim() : '';
+        const funcao = linha[colFuncao] ? linha[colFuncao].toString().trim() : '';
+        const local = colLocal >= 0 && linha[colLocal] ? linha[colLocal].toString().trim() : '';
+        
+        if (nome && funcao && nome.length > 2 && funcao.length > 2) {
+          colaboradores.push({
+            nome,
+            funcao,
+            local,
+            planilha: nomePlanilha,
+            linha: i
+          });
+        }
+      }
+      
+      return { colaboradores, debugInfo: debugLocal };
+    }
     });
 
-    // Verificar se PDF.js está carregado
-    function checkPdfJs() {
-      if (typeof pdfjsLib === 'undefined') {
-        showFeedback('❌ Erro: PDF.js não foi carregado corretamente', 'error');
+    // Verificar se SheetJS está carregado
+    function checkExcelJs() {
+      if (typeof XLSX === 'undefined') {
+        showFeedback('❌ Erro: Biblioteca Excel não foi carregada corretamente', 'error');
         return false;
       }
       return true;
     }
 
     // Clique no label para abrir o input
-    document.querySelector('label[for="pdfEquipe"]').addEventListener('click', (e) => {
+    document.querySelector('label[for="excelEquipe"]').addEventListener('click', (e) => {
       e.preventDefault();
-      if (!checkPdfJs()) return;
-      document.getElementById('pdfEquipe').click();
+      if (!checkExcelJs()) return;
+      document.getElementById('excelEquipe').click();
     });
 
     // Processamento do arquivo PDF
@@ -370,9 +437,11 @@
 
         colaboradoresEncontrados = colaboradoresUnicos;
 
-    // Função para criar cards de colaboradores
+    // Função para criar cards de colaboradores (com verificação de segurança)
     function criarCards(colaboradores) {
-      const container = document.getElementById('cardsContainer');
+      const container = getElement('cardsContainer');
+      if (!container) return;
+      
       container.innerHTML = '';
       
       colaboradores.forEach((colab, index) => {
@@ -380,9 +449,15 @@
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.id = id;
+        
+        const localInfo = colab.local ? `<br/><strong>Local:</strong> ${colab.local}` : '';
+        
         card.innerHTML = `
           <div class="card-header">
-            <div><strong>Colaborador:</strong> ${colab.nome}<br/><strong>Função:</strong> ${colab.funcao}</div>
+            <div>
+              <strong>Colaborador:</strong> ${colab.nome}<br/>
+              <strong>Função:</strong> ${colab.funcao}${localInfo}
+            </div>
             <div class="status">Avaliação não iniciada</div>
           </div>
           <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>

@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Avaliação de Desempenho</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; }
     header { padding: 20px; background: linear-gradient(90deg, #0066cc, #33ccff); color: white; text-align: center; }
@@ -21,58 +20,7 @@
     .status.pendente-gestor { background: #ffc107; color: black; }
     .status.pendente-colab { background: #dc3545; }
     .competencia { margin-top: 15px; padding: 15px; background: #f0f0f0; border-radius: 6px; }
-    .assinatura { font-family: 'Brush Script MT', cursive; font-size: 1.6em; background: linear-gradient(to right, #8E2DE2, #4A00E0, #00C9FF, #92FE9D); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent; animation: gradientMove 6s linear infinite; background-size: 300% 100%; text-align: center; }
-    @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     footer { text-align: center; padding: 30px 10px; font-size: 0.85em; color: #999; background: #fff; }
-    .debug-info { 
-      background: #f8f9fa; 
-      border: 1px solid #ddd; 
-      padding: 10px; 
-      margin: 10px 0; 
-      border-radius: 4px; 
-      font-family: monospace; 
-      font-size: 12px; 
-      max-width: 100%;
-      overflow-x: auto;
-      word-wrap: break-word;
-    }
-    .loading { display: none; text-align: center; padding: 20px; color: #0066cc; }
-    .error { color: #dc3545; font-weight: bold; }
-    .success { color: #28a745; font-weight: bold; }
-    .info-box { 
-      background: #e3f2fd; 
-      border-left: 4px solid #2196f3; 
-      padding: 15px; 
-      margin: 15px 0; 
-      border-radius: 4px; 
-      font-size: 14px; 
-      line-height: 1.5;
-    }
-    .btn-custom {
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .btn-custom:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    
-    /* Responsividade */
-    @media (max-width: 768px) {
-      .card-header { flex-direction: column; gap: 10px; }
-      .competencia label, .competencia button { 
-        display: block; 
-        width: 100%; 
-        margin: 5px 0 !important; 
-        text-align: center;
-        box-sizing: border-box;
-      }
-      .tabs { flex-wrap: wrap; }
-      .tabs button { flex: 1; min-width: 120px; }
-      .debug-info { font-size: 10px; }
-      .info-box { font-size: 13px; padding: 10px; }
-      header h1 { font-size: 1.5em; }
-    }
   </style>
 </head>
 <body>
@@ -88,27 +36,12 @@
   <div id="colaborador" class="tab-content active">
     <div class="card">
       <div class="card-header">
-        <strong>Importar Equipe:</strong> Envie o arquivo Excel com organograma para gerar os cards automaticamente.
+        <strong>Importar Equipe:</strong> Envie um arquivo Excel com nomes e funções.
       </div>
-      
-      <div class="info-box">
-        <strong>📊 Formato de Excel Compatível:</strong><br/>
-        • <strong>Workday:</strong> Relatórios de organograma/estrutura da equipe (.xlsx)<br/>
-        • <strong>Estrutura esperada:</strong> Coluna "Nome" e coluna "Detalhes da linha 1" (função)<br/>
-        • <strong>Exemplo:</strong> Nome: "João Silva" | Função: "Preparador Operador CNC"<br/>
-        • <strong>Formatos suportados:</strong> Planilhas de colaboradores, organigramas, relatórios de RH
-      </div>
-      
       <div class="competencia">
-        <label for="excelEquipe" class="btn-custom" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; margin-right: 10px;">📊 Carregar Excel da Equipe</label>
-        <button id="testeExemplo" class="btn-custom" style="background:#28a745; color:#fff; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-right: 10px;">🧪 Teste com Dados de Exemplo</button>
-        <button id="limparDados" class="btn-custom" style="background:#dc3545; color:#fff; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">🗑️ Limpar Dados</button>
-        <input type="file" id="excelEquipe" accept=".xlsx,.xls" style="display:none;" />
+        <label for="excelInput" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Carregar Excel</label>
+        <input type="file" id="excelInput" accept=".xlsx, .xls" style="display:none;" />
         <div id="uploadFeedback" style="margin-top: 10px; font-weight:bold; color:#0066cc; opacity:0; transition:opacity 1s;"></div>
-        <div class="loading" id="loading">
-          <p>⏳ Processando Excel...</p>
-        </div>
-        <div id="debugInfo" class="debug-info" style="display: none;"></div>
       </div>
     </div>
     <div id="cardsContainer"></div>
@@ -120,54 +53,16 @@
         <strong>Resumo Equipe:</strong> Comparativo de competências e status de preenchimento.
       </div>
       <div class="competencia">
-        <canvas id="graficoRadar" width="400" height="400"></canvas>
+        <em>Gráficos e comparações serão exibidos aqui.</em>
       </div>
     </div>
   </div>
 
   <footer>
-    &copy; 2025 Painel de Avaliação - Todos os direitos reservados.<br/>
+    &copy; 2025 Painel de Avaliação - Todos os direitos reservados.
   </footer>
 
   <script>
-    // Função para mostrar feedback (com verificação de segurança)
-    function showFeedback(message, type = 'info') {
-      const feedback = getElement('uploadFeedback');
-      if (!feedback) return;
-      
-      feedback.innerText = message;
-      feedback.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#0066cc';
-      feedback.style.opacity = '1';
-      
-      setTimeout(() => {
-        feedback.style.opacity = '0';
-      }, type === 'error' ? 5000 : 3000);
-    }
-
-    // Função para mostrar informações de debug (com limite de tamanho e verificação de segurança)
-    function showDebug(info) {
-      const debugDiv = getElement('debugInfo');
-      if (!debugDiv) return;
-      
-      // Truncar se muito longo
-      let debugContent = info;
-      if (info.length > 2000) {
-        debugContent = info.substring(0, 2000) + '...<br/><em>(Debug truncado - veja o console para informações completas)</em>';
-      }
-      
-      debugDiv.innerHTML = `<strong>🔍 Informações de Debug:</strong><br/>${debugContent}`;
-      debugDiv.style.display = 'block';
-    }
-
-    // Função para mostrar loading (com verificação de segurança)
-    function showLoading(show) {
-      const loading = getElement('loading');
-      if (loading) {
-        loading.style.display = show ? 'block' : 'none';
-      }
-    }
-
-    // Configuração das abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -175,364 +70,57 @@
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab).classList.add('active');
       });
-
-    // Função para processar dados do Excel
-    function parseExcelData(dados, nomePlanilha, debugInfo) {
-      const colaboradores = [];
-      let debugLocal = '';
-      
-      if (dados.length < 2) return { colaboradores, debugInfo: debugLocal };
-      
-      const cabecalho = dados[0];
-      console.log('Cabeçalho da planilha:', cabecalho);
-      
-      // Identificar colunas importantes (flexível para diferentes formatos)
-      let colNome = -1, colFuncao = -1, colLocal = -1;
-      
-      cabecalho.forEach((col, index) => {
-        const colLower = (col || '').toString().toLowerCase();
-        if (colLower.includes('nome') && !colLower.includes('organiz')) {
-          colNome = index;
-        } else if (colLower.includes('detalhes') || colLower.includes('função') || colLower.includes('cargo') || colLower.includes('linha 1')) {
-          colFuncao = index;
-        } else if (colLower.includes('local') || colLower.includes('cidade') || colLower.includes('linha 3')) {
-          colLocal = index;
-        }
-      });
-      
-      debugLocal += `Colunas identificadas - Nome: ${colNome}, Função: ${colFuncao}, Local: ${colLocal}<br/>`;
-      
-      // Se não encontrou as colunas específicas, tentar padrão genérico
-      if (colNome === -1 || colFuncao === -1) {
-        // Assumir que Nome está na coluna 1 (B) e Função na coluna 3 (D) - padrão Workday
-        if (cabecalho.length > 3) {
-          colNome = 1;
-          colFuncao = 3;
-          colLocal = 5;
-        } else {
-          // Formato mais simples: Nome, Função
-          colNome = 0;
-          colFuncao = 1;
-        }
-      }
-      
-      // Processar cada linha de dados
-      for (let i = 1; i < dados.length; i++) {
-        const linha = dados[i];
-        
-        if (!linha || linha.length === 0) continue;
-        
-        const nome = linha[colNome] ? linha[colNome].toString().trim() : '';
-        const funcao = linha[colFuncao] ? linha[colFuncao].toString().trim() : '';
-        const local = colLocal >= 0 && linha[colLocal] ? linha[colLocal].toString().trim() : '';
-        
-        if (nome && funcao && nome.length > 2 && funcao.length > 2) {
-          colaboradores.push({
-            nome,
-            funcao,
-            local,
-            planilha: nomePlanilha,
-            linha: i
-          });
-        }
-      }
-      
-      return { colaboradores, debugInfo: debugLocal };
-    }
     });
 
-    // Verificar se SheetJS está carregado
-    function checkExcelJs() {
-      if (typeof XLSX === 'undefined') {
-        showFeedback('❌ Erro: Biblioteca Excel não foi carregada corretamente', 'error');
-        return false;
-      }
-      return true;
-    }
-
-    // Clique no label para abrir o input
-    document.querySelector('label[for="excelEquipe"]').addEventListener('click', (e) => {
-      e.preventDefault();
-      if (!checkExcelJs()) return;
-      document.getElementById('excelEquipe').click();
+    document.querySelector('label[for="excelInput"]').addEventListener('click', () => {
+      document.getElementById('excelInput').click();
     });
 
-    // Processamento do arquivo PDF
-    document.getElementById('pdfEquipe').addEventListener('change', async function(event) {
+    document.getElementById('excelInput').addEventListener('change', async function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      showLoading(true);
-      showFeedback('Iniciando processamento do PDF...', 'info');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
 
-      try {
-        console.log('Arquivo selecionado:', file.name, 'Tamanho:', file.size, 'bytes');
-        
-        // Verificar se é realmente um PDF
-        if (file.type !== 'application/pdf') {
-          throw new Error('O arquivo selecionado não é um PDF válido');
-        }
+        const sheet = workbook.Sheets["Organograma"] || workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
 
-        // Converter arquivo para ArrayBuffer
-        const arrayBuffer = await file.arrayBuffer();
-        console.log('ArrayBuffer criado, tamanho:', arrayBuffer.byteLength);
-        
-        showFeedback('Carregando PDF...', 'info');
-        
-        // Carregar o PDF
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        console.log('PDF carregado. Número de páginas:', pdf.numPages);
-        
-        showFeedback(`PDF carregado (${pdf.numPages} páginas). Extraindo texto...`, 'info');
-
-        let fullText = '';
-        let debugInfo = `Páginas encontradas: ${pdf.numPages}<br/>`;
-
-        // Extrair texto de todas as páginas
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const strings = content.items.map(item => item.str);
-          const pageText = strings.join(' ');
-          fullText += pageText + '\n';
-          
-          debugInfo += `Página ${i}: ${strings.length} elementos de texto<br/>`;
-          console.log(`Página ${i}:`, strings.slice(0, 10)); // Mostrar primeiros 10 itens
-        }
-
-        console.log("TEXTO COMPLETO EXTRAÍDO:");
-        console.log(fullText);
-        
-        debugInfo += `<br/>Texto total extraído: ${fullText.length} caracteres<br/>`;
-        showDebug(debugInfo);
-
-        // Processar o texto extraído - Formato específico do Workday
-        const lines = fullText.split('\n').map(l => l.trim()).filter(l => l);
-        console.log('Linhas processadas:', lines.slice(0, 30)); // Mostrar primeiras 30 linhas
-        
         const container = document.getElementById('cardsContainer');
         container.innerHTML = '';
-        let encontrouColaboradores = false;
-        let colaboradoresEncontrados = [];
 
-        // Parser específico para relatórios do Workday
-        function parseWorkdayReport(lines) {
-          const colaboradores = [];
-          const ignorarLinhas = [
-            'A partir de:', 'Página', 'workday', 'Jundiaí', 'Prep.Op.CNC...', 
-            'Rogerio Ramos:', '(30)', 'Lider Processo Usi...', 'Employee Machining'
-          ];
-          
-          for (let i = 0; i < lines.length; i++) {
-            const linha = lines[i];
-            
-            // Ignorar linhas de cabeçalho, numeração e localização
-            if (ignorarLinhas.some(ignore => linha.includes(ignore)) || 
-                linha.match(/^\d+$/) || 
-                linha === 'Jundiaí' || 
-                linha.length < 3) {
-              continue;
-            }
-            
-            // Identificar nomes (começam com letra maiúscula e contêm espaço ou têm mais de 5 caracteres)
-            if ((linha.includes(' ') && /^[A-ZÁÊÍÔÚ]/.test(linha)) || 
-                (linha.length > 5 && /^[A-ZÁÊÍÔÚ]/.test(linha) && /[a-z]/.test(linha))) {
-              
-              // Procurar a função na próxima linha válida
-              for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-                const proximaLinha = lines[j];
-                
-                // Se a próxima linha é uma função válida
-                if (proximaLinha && 
-                    proximaLinha !== 'Jundiaí' && 
-                    !proximaLinha.match(/^\d+$/) &&
-                    !ignorarLinhas.some(ignore => proximaLinha.includes(ignore)) &&
-                    proximaLinha.length > 3) {
-                  
-                  // Verificar se não é outro nome
-                  const ehOutroNome = /^[A-ZÁÊÍÔÚ][a-z]+ [A-ZÁÊÍÔÚ]/.test(proximaLinha);
-                  
-                  if (!ehOutroNome) {
-                    colaboradores.push({ 
-                      nome: linha, 
-                      funcao: proximaLinha,
-                      linha: i 
-                    });
-                    i = j; // Pular para depois da função
-                    break;
-                  }
-                }
-              }
-            }
-          }
-          
-          return colaboradores;
-        }
+        json.forEach(row => {
+          const nome = row['Nome'] || row['nome'];
+          const funcao = row['Detalhes da linha 1'] || row['Função'] || row['funcao'];
+          const local = row['Detalhes da linha 3'] || row['Local'] || '';
 
-        // Usar o parser específico do Workday
-        colaboradoresEncontrados = parseWorkdayReport(lines);
-        
-        // Se ainda não encontrou, tentar padrão alternativo
-        if (colaboradoresEncontrados.length === 0) {
-          // Regex para capturar padrões nome-função específicos
-          const texto = lines.join('\n');
-          const matches = texto.match(/([A-ZÁÊÍÔÚ][a-záêíôú]+ [A-ZÁÊÍÔÚ][a-záêíôú]+[^.\n]*)\n([A-Z][a-z]+\.[A-Z][a-z]+\.[A-Z][A-Z][A-Z].*|Operador.*|Aprendiz|Employee.*)/g);
-          
-          if (matches) {
-            matches.forEach(match => {
-              const partes = match.split('\n');
-              if (partes.length >= 2) {
-                colaboradoresEncontrados.push({
-                  nome: partes[0].trim(),
-                  funcao: partes[1].trim(),
-                  linha: 0
-                });
-              }
-            });
-          }
-        }
+          if (!nome || !funcao) return;
 
-        console.log('Colaboradores encontrados:', colaboradoresEncontrados);
-
-        // Função para limpar e normalizar os dados
-        function limparDados(colaboradores) {
-          return colaboradores.map(colab => {
-            let nome = colab.nome
-              .replace(/\.\.\./g, '') // Remover reticências
-              .replace(/\s+/g, ' ') // Normalizar espaços
-              .trim();
-            
-            let funcao = colab.funcao
-              .replace(/\.\.\./g, '') // Remover reticências
-              .replace(/Prep\.Op\./g, 'Preparador Operador ') // Expandir abreviações
-              .replace(/CNC Multifu\.\.\./g, 'CNC Multifuncional')
-              .replace(/Torno Vertica\.\.\./g, 'Torno Vertical')
-              .replace(/Mandrilhador\.\.\./g, 'Mandrilhadora')
-              .replace(/\s+/g, ' ') // Normalizar espaços
-              .trim();
-            
-            return { nome, funcao, linha: colab.linha };
-          })
-          .filter(colab => 
-            colab.nome.length > 2 && 
-            colab.funcao.length > 2 && 
-            colab.nome !== colab.funcao // Evitar duplicatas
-          );
-        }
-
-        // Limpar e filtrar os dados
-        colaboradoresEncontrados = limparDados(colaboradoresEncontrados);
-
-        // Remover duplicatas baseado no nome
-        const colaboradoresUnicos = [];
-        const nomesVistos = new Set();
-        
-        colaboradoresEncontrados.forEach(colab => {
-          const nomeNormalizado = colab.nome.toLowerCase().replace(/[^a-z]/g, '');
-          if (!nomesVistos.has(nomeNormalizado)) {
-            nomesVistos.add(nomeNormalizado);
-            colaboradoresUnicos.push(colab);
-          }
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-header">
+              <div>
+                <strong>Colaborador:</strong> ${nome}<br/>
+                <strong>Função:</strong> ${funcao}${local ? '<br/><strong>Local:</strong> ' + local : ''}
+              </div>
+              <div class="status">Avaliação não iniciada</div>
+            </div>
+            <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
+          `;
+          container.appendChild(card);
         });
 
-        colaboradoresEncontrados = colaboradoresUnicos;
+        const feedback = document.getElementById('uploadFeedback');
+        feedback.innerText = 'Equipe carregada com sucesso!';
+        feedback.style.color = '#28a745';
+        feedback.style.opacity = '1';
+        setTimeout(() => feedback.style.opacity = '0', 3000);
+      };
 
-    // Função para criar cards de colaboradores (com verificação de segurança)
-    function criarCards(colaboradores) {
-      const container = getElement('cardsContainer');
-      if (!container) return;
-      
-      container.innerHTML = '';
-      
-      colaboradores.forEach((colab, index) => {
-        const id = colab.nome.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.dataset.id = id;
-        
-        const localInfo = colab.local ? `<br/><strong>Local:</strong> ${colab.local}` : '';
-        
-        card.innerHTML = `
-          <div class="card-header">
-            <div>
-              <strong>Colaborador:</strong> ${colab.nome}<br/>
-              <strong>Função:</strong> ${colab.funcao}${localInfo}
-            </div>
-            <div class="status">Avaliação não iniciada</div>
-          </div>
-          <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    // Botão de teste com dados de exemplo
-    document.getElementById('testeExemplo').addEventListener('click', () => {
-      const exemploColaboradores = [
-        { nome: 'Rogerio Ramos', funcao: 'Lider Processo Usinagem' },
-        { nome: 'Adilson Goncalves', funcao: 'Preparador Operador CNC Multifuncional' },
-        { nome: 'Alexandre Domingues', funcao: 'Preparador Operador CNC Multifuncional' },
-        { nome: 'Aluisio Martins', funcao: 'Operador Máquina' },
-        { nome: 'Amilton Patera', funcao: 'Preparador Operador CNC Multifuncional' },
-        { nome: 'Antonio Francisco', funcao: 'Preparador Operador CNC Multifuncional' },
-        { nome: 'Gabriel Borssatto', funcao: 'Preparador Operador Torno Vertical' },
-        { nome: 'Gustavo Henrique', funcao: 'Aprendiz' },
-        { nome: 'Jonathan de Melo', funcao: 'Operador CNC Multifuncional' },
-        { nome: 'Juliano de Almeida', funcao: 'Preparador Operador Mandrilhadora' },
-        { nome: 'Lucas Augusto', funcao: 'Operador CNC Multifuncional' },
-        { nome: 'Raildo Xavier', funcao: 'Furador Radial' },
-        { nome: 'Samuel Ferreira', funcao: 'Operador Máquina' },
-        { nome: 'Vinicius Diniz Leal', funcao: 'Aprendiz' }
-      ];
-      
-      criarCards(exemploColaboradores);
-      showFeedback(`✅ Dados de exemplo carregados! ${exemploColaboradores.length} colaboradores.`, 'success');
-    });
-
-    // Botão para limpar dados
-    document.getElementById('limparDados').addEventListener('click', () => {
-      document.getElementById('cardsContainer').innerHTML = '';
-      document.getElementById('debugInfo').style.display = 'none';
-      showFeedback('🗑️ Dados limpos com sucesso!', 'info');
-    });
-
-        showLoading(false);
-
-        if (encontrouColaboradores) {
-          showFeedback(`✅ Equipe carregada com sucesso! ${colaboradoresEncontrados.length} colaborador(es) encontrado(s).`, 'success');
-          
-          // Mostrar preview dos colaboradores encontrados no debug
-          const preview = colaboradoresEncontrados.slice(0, 5).map(c => 
-            `• ${c.nome} → ${c.funcao}`
-          ).join('<br/>');
-          const totalInfo = colaboradoresEncontrados.length > 5 ? 
-            `<br/><em>... e mais ${colaboradoresEncontrados.length - 5} colaboradores</em>` : '';
-          
-          showDebug(debugInfo + `<br/><strong>✅ Colaboradores encontrados (primeiros 5):</strong><br/>${preview}${totalInfo}`);
-        } else {
-          showFeedback('⚠️ Nenhum colaborador encontrado no PDF. Verifique o formato do arquivo.', 'error');
-          const linhasPreview = lines.slice(0, 15).join('<br/>').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          showDebug(debugInfo + `<br/><strong>❌ Primeiras 15 linhas do texto extraído:</strong><br/>${linhasPreview}`);
-        }
-
-      } catch (error) {
-        showLoading(false);
-        console.error('Erro ao processar PDF:', error);
-        showFeedback(`❌ Erro ao processar PDF: ${error.message}`, 'error');
-        showDebug(`Erro detalhado: ${error.message}<br/>Stack: ${error.stack}`);
-      }
-
-      // Limpar o input para permitir recarregar o mesmo arquivo
-      event.target.value = '';
-    });
-
-    // Verificar se PDF.js carregou corretamente ao iniciar
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        if (checkPdfJs()) {
-          console.log('PDF.js carregado com sucesso');
-        }
-      }, 1000);
+      reader.readAsArrayBuffer(file);
     });
   </script>
 </body>

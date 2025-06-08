@@ -96,10 +96,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
       console.log("TEXTO EXTRAÍDO DO PDF:");
 console.log(fullText);
 
-const lines = fullText.split('
-').map(l => l.trim()).filter(l => l);
-      const container = document.getElementById('cardsContainer');
-      container.innerHTML = '';
+const lines = fullText.split('\n').map(l => l.trim()).filter(l => l);
+  const container = document.getElementById('cardsContainer');
+  container.innerHTML = '';
 let encontrouColaboradores = false;
 
       for (let i = 0; i < lines.length; i++) {

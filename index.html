@@ -29,7 +29,7 @@
 <body>
   <header>
     <h1>Painel de Avaliação de Desempenho</h1>
-    <div class="assinatura">Rogerinho Ramos</div>
+    
   </header>
 
   <div class="tabs">
@@ -43,7 +43,9 @@
         <strong>Importar Equipe:</strong> Envie o PDF com nomes e funções para gerar os cards automaticamente.
       </div>
       <div class="competencia">
-        <input type="file" id="pdfEquipe" accept="application/pdf" />
+  <label for="pdfEquipe" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Carregar PDF da Equipe</label>
+  <input type="file" id="pdfEquipe" accept="application/pdf" style="display:none;" />
+  <div id="uploadFeedback" style="margin-top: 10px; font-weight:bold; color:#0066cc; opacity:0; transition:opacity 1s;"></div>
       </div>
     </div>
     <div id="cardsContainer"></div>
@@ -62,7 +64,7 @@
 
   <footer>
     &copy; 2025 Painel de Avaliação - Todos os direitos reservados.<br/>
-    <div class="assinatura">Rogerinho Ramos</div>
+    
   </footer>
 
   <script>
@@ -108,6 +110,14 @@
             <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
           `;
           container.appendChild(card);
+
+      const feedback = document.getElementById('uploadFeedback');
+feedback.innerText = 'Equipe carregada com sucesso!';
+feedback.style.opacity = '1';
+setTimeout(() => {
+  feedback.style.transition = 'opacity 1s';
+  feedback.style.opacity = '0';
+}, 3000);
         }
       }
     });

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Avaliação de Desempenho</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
-</script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; }
@@ -32,7 +32,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 <body>
   <header>
     <h1>Painel de Avaliação de Desempenho</h1>
-    
   </header>
 
   <div class="tabs">
@@ -46,9 +45,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
         <strong>Importar Equipe:</strong> Envie o PDF com nomes e funções para gerar os cards automaticamente.
       </div>
       <div class="competencia">
-  <label for="pdfEquipe" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Carregar PDF da Equipe</label>
-  <input type="file" id="pdfEquipe" accept="application/pdf" style="display:none;" />
-  <div id="uploadFeedback" style="margin-top: 10px; font-weight:bold; color:#0066cc; opacity:0; transition:opacity 1s;"></div>
+        <label for="pdfEquipe" style="display:inline-block; background:#0066cc; color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Carregar PDF da Equipe</label>
+        <input type="file" id="pdfEquipe" accept="application/pdf" style="display:none;" />
+        <div id="uploadFeedback" style="margin-top: 10px; font-weight:bold; color:#0066cc; opacity:0; transition:opacity 1s;"></div>
       </div>
     </div>
     <div id="cardsContainer"></div>
@@ -67,7 +66,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
   <footer>
     &copy; 2025 Painel de Avaliação - Todos os direitos reservados.<br/>
-    
   </footer>
 
   <script>
@@ -78,6 +76,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab).classList.add('active');
       });
+    });
+
+    document.querySelector('label[for="pdfEquipe"]').addEventListener('click', () => {
+      document.getElementById('pdfEquipe').click();
     });
 
     document.getElementById('pdfEquipe').addEventListener('change', async function(event) {
@@ -94,12 +96,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
       }
 
       console.log("TEXTO EXTRAÍDO DO PDF:");
-console.log(fullText);
+      console.log(fullText);
 
-const lines = fullText.split('\n').map(l => l.trim()).filter(l => l);
-  const container = document.getElementById('cardsContainer');
-  container.innerHTML = '';
-let encontrouColaboradores = false;
+      const lines = fullText.split('\n').map(l => l.trim()).filter(l => l);
+      const container = document.getElementById('cardsContainer');
+      container.innerHTML = '';
+      let encontrouColaboradores = false;
 
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].match(/^\d{1,2}$/) && lines[i+1] && lines[i+2]) {
@@ -117,27 +119,28 @@ let encontrouColaboradores = false;
             <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
           `;
           container.appendChild(card);
-encontrouColaboradores = true;
-            }
-    }
-    const feedback = document.getElementById('uploadFeedback');
-    if (encontrouColaboradores) {
-      feedback.innerText = 'Equipe carregada com sucesso!';
-      feedback.style.color = '#0066cc';
-      feedback.style.opacity = '1';
-      setTimeout(() => {
-        feedback.style.transition = 'opacity 1s';
-        feedback.style.opacity = '0';
-      }, 3000);
-    } else {
-      feedback.innerText = '❌ Nenhum colaborador encontrado no PDF.';
-      feedback.style.color = '#dc3545';
-      feedback.style.opacity = '1';
-      setTimeout(() => {
-        feedback.style.opacity = '0';
-      }, 4000);
-    }
-  });
+          encontrouColaboradores = true;
+        }
+      }
+
+      const feedback = document.getElementById('uploadFeedback');
+      if (encontrouColaboradores) {
+        feedback.innerText = 'Equipe carregada com sucesso!';
+        feedback.style.color = '#0066cc';
+        feedback.style.opacity = '1';
+        setTimeout(() => {
+          feedback.style.transition = 'opacity 1s';
+          feedback.style.opacity = '0';
+        }, 3000);
+      } else {
+        feedback.innerText = '❌ Nenhum colaborador encontrado no PDF.';
+        feedback.style.color = '#dc3545';
+        feedback.style.opacity = '1';
+        setTimeout(() => {
+          feedback.style.opacity = '0';
+        }, 4000);
+      }
+    });
   </script>
 </body>
 </html>

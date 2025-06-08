@@ -5,35 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Avaliação de Desempenho</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; }
     header { padding: 20px; background: linear-gradient(90deg, #0066cc, #33ccff); color: white; text-align: center; }
-    .tabs { display: flex; justify-content: center; background: #ddd; padding: 10px; }
+    .tabs { display: flex; justify-content: center; background: #ddd; padding: 10px; flex-wrap: wrap; }
     .tabs button { background: none; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; color: #333; border-bottom: 3px solid transparent; }
     .tabs button.active { border-color: #0066cc; color: #0066cc; }
     .tab-content { display: none; padding: 20px; }
     .tab-content.active { display: block; }
-    .card { background: white; padding: 20px; margin: 20px 0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    #cardsContainer { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+    .card { background: white; padding: 20px; width: 340px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
     .status { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; color: white; }
     .status.complete { background: #28a745; }
     .status.pendente-gestor { background: #ffc107; color: black; }
     .status.pendente-colab { background: #dc3545; }
     .competencia { margin-top: 15px; padding: 15px; background: #f0f0f0; border-radius: 6px; }
-    .progress-bar {
-      width: 0;
-      height: 8px;
-      background: #28a745;
-      transition: width 0.5s;
-      border-radius: 4px;
-    }
-    .progress-container {
-      height: 8px;
-      background: #ccc;
-      margin-top: 10px;
-      border-radius: 4px;
-      overflow: hidden;
-    }
+    .pilar { margin-bottom: 12px; }
+    .pilar label { font-weight: bold; display: block; margin-bottom: 4px; }
+    .pilar select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+    .progress-bar { width: 0; height: 8px; background: #28a745; transition: width 0.5s; border-radius: 4px; }
+    .progress-container { height: 8px; background: #ccc; margin-top: 10px; border-radius: 4px; overflow: hidden; }
+    .periodo-select { margin-top: 20px; text-align: center; }
+    .periodo-select select { padding: 8px; font-size: 1em; border-radius: 6px; }
+    .btn-exportar { margin: 20px auto; display: block; background: #0066cc; color: #fff; padding: 10px 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
     footer { text-align: center; padding: 30px 10px; font-size: 0.85em; color: #999; background: #fff; }
   </style>
 </head>
@@ -59,6 +55,15 @@
         <div id="uploadFeedback" style="margin-top: 10px; font-weight:bold; color:#0066cc; opacity:0; transition:opacity 1s;"></div>
       </div>
     </div>
+    <div class="periodo-select">
+      <label for="periodoSelecionado"><strong>📅 Selecione o período da avaliação:</strong></label><br/>
+      <select id="periodoSelecionado">
+        <option value="2024">2024</option>
+        <option value="2023">2023</option>
+        <option value="2022">2022</option>
+      </select>
+    </div>
+    <button id="exportarDados" class="btn-exportar">⬇️ Exportar Avaliações</button>
     <div id="cardsContainer"></div>
   </div>
 
@@ -78,6 +83,8 @@
   </footer>
 
   <script>
+    const avaliacoes = [];
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -101,20 +108,16 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         progressBar.style.width = '30%';
-
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
 
         progressBar.style.width = '50%';
-
         const sheet = workbook.Sheets["Organograma"] || workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
 
         progressBar.style.width = '70%';
-
         const container = document.getElementById('cardsContainer');
         container.innerHTML = '';
-
         let count = 0;
 
         json.forEach(row => {
@@ -126,33 +129,66 @@
 
           const card = document.createElement('div');
           card.className = 'card';
+
+          const periodo = document.getElementById('periodoSelecionado').value;
+
           card.innerHTML = `
             <div class="card-header">
               <div>
                 <strong>Colaborador:</strong> ${nome}<br/>
-                <strong>Função:</strong> ${funcao}${local ? '<br/><strong>Local:</strong> ' + local : ''}
+                <strong>Função:</strong> ${funcao}${local ? '<br/><strong>Local:</strong> ' + local : ''}<br/>
+                <strong>Período:</strong> ${periodo}
               </div>
               <div class="status">Avaliação não iniciada</div>
             </div>
-            <div class="competencia"><em>Nenhuma avaliação registrada.</em></div>
+            <div class="competencia">
+              ${['1. Age como um especialista','2. Colabora competentemente e com integridade','3. Foco nos negócios','4. Profissionalismo','5. Toma iniciativas e age com foco'].map((pilar, i) => `
+                <div class="pilar">
+                  <label>${pilar}</label>
+                  <select data-nome="${nome}" data-pilar="${pilar}" onchange="salvarAvaliacao(this)">
+                    <option value="">Selecione</option>
+                    <option>A</option><option>B</option><option>C</option>
+                  </select>
+                </div>
+              `).join('')}
+            </div>
           `;
           container.appendChild(card);
           count++;
         });
 
         progressBar.style.width = '100%';
-
         const feedback = document.getElementById('uploadFeedback');
         feedback.innerText = `✅ ${count} colaborador(es) carregado(s) com sucesso!`;
         feedback.style.color = '#28a745';
         feedback.style.opacity = '1';
-        setTimeout(() => {
-          feedback.style.opacity = '0';
-          progressBar.style.width = '0';
-        }, 4000);
       };
 
       reader.readAsArrayBuffer(file);
+    });
+
+    function salvarAvaliacao(select) {
+      const nome = select.dataset.nome;
+      const pilar = select.dataset.pilar;
+      const valor = select.value;
+      const periodo = document.getElementById('periodoSelecionado').value;
+
+      const index = avaliacoes.findIndex(a => a.nome === nome && a.pilar === pilar && a.periodo === periodo);
+
+      if (index > -1) {
+        avaliacoes[index].nota = valor;
+      } else {
+        avaliacoes.push({ nome, pilar, nota: valor, periodo });
+      }
+
+      localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes));
+    }
+
+    document.getElementById('exportarDados').addEventListener('click', () => {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(avaliacoes);
+      XLSX.utils.book_append_sheet(wb, ws, 'Avaliações');
+      XLSX.writeFile(wb, 'avaliacoes.xlsx');
     });
   </script>
 </body>

@@ -58,6 +58,7 @@
     <div class="periodo-select">
       <label for="periodoSelecionado"><strong>📅 Selecione o período da avaliação:</strong></label><br/>
       <select id="periodoSelecionado">
+        <option value="2025">2025</option>
         <option value="2024">2024</option>
         <option value="2023">2023</option>
         <option value="2022">2022</option>
@@ -83,7 +84,7 @@
   </footer>
 
   <script>
-    const avaliacoes = [];
+    const avaliacoes = JSON.parse(localStorage.getItem('avaliacoes') || '[]');
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -120,6 +121,8 @@
         container.innerHTML = '';
         let count = 0;
 
+        const periodo = document.getElementById('periodoSelecionado').value;
+
         json.forEach(row => {
           const nome = row['Nome'] || row['nome'];
           const funcao = row['Detalhes da linha 1'] || row['Função'] || row['funcao'];
@@ -129,8 +132,6 @@
 
           const card = document.createElement('div');
           card.className = 'card';
-
-          const periodo = document.getElementById('periodoSelecionado').value;
 
           card.innerHTML = `
             <div class="card-header">
@@ -142,15 +143,19 @@
               <div class="status">Avaliação não iniciada</div>
             </div>
             <div class="competencia">
-              ${['1. Age como um especialista','2. Colabora competentemente e com integridade','3. Foco nos negócios','4. Profissionalismo','5. Toma iniciativas e age com foco'].map((pilar, i) => `
+              ${['1. Age como um especialista','2. Colabora competentemente e com integridade','3. Foco nos negócios','4. Profissionalismo','5. Toma iniciativas e age com foco'].map((pilar, i) => {
+                const valorAtual = (avaliacoes.find(a => a.nome === nome && a.pilar === pilar && a.periodo === periodo) || {}).nota || '';
+                return `
                 <div class="pilar">
                   <label>${pilar}</label>
                   <select data-nome="${nome}" data-pilar="${pilar}" onchange="salvarAvaliacao(this)">
                     <option value="">Selecione</option>
-                    <option>A</option><option>B</option><option>C</option>
+                    <option${valorAtual==='A'?' selected':''}>A</option>
+                    <option${valorAtual==='B'?' selected':''}>B</option>
+                    <option${valorAtual==='C'?' selected':''}>C</option>
                   </select>
-                </div>
-              `).join('')}
+                </div>`;
+              }).join('')}
             </div>
           `;
           container.appendChild(card);
@@ -163,7 +168,6 @@
         feedback.style.color = '#28a745';
         feedback.style.opacity = '1';
       };
-
       reader.readAsArrayBuffer(file);
     });
 

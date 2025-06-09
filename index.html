@@ -115,14 +115,26 @@
     document.getElementById("excelInput").addEventListener("change", function (event) {
       const file = event.target.files[0];
       if (!file) return;
+
+      const progressBar = document.getElementById("progressBar");
+      const feedback = document.getElementById("uploadFeedback");
+      progressBar.style.width = '10%';
+
       const reader = new FileReader();
       reader.onload = function (e) {
+        progressBar.style.width = '30%';
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: "array" });
+
+        progressBar.style.width = '50%';
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
+
+        progressBar.style.width = '70%';
         const container = document.getElementById("cardsContainer");
         container.innerHTML = "";
+
+        let count = 0;
         json.forEach(row => {
           const nome = row["Nome"] || row["nome"] || "";
           const funcao = row["Função"] || row["funcao"] || "";
@@ -134,7 +146,12 @@
             <div class="status">Não avaliado</div>
           </div>`;
           container.appendChild(card);
+          count++;
         });
+
+        progressBar.style.width = '100%';
+        feedback.innerText = `✅ ${count} colaborador(es) carregado(s) com sucesso!`;
+        feedback.style.opacity = 1;
       };
       reader.readAsArrayBuffer(file);
     });

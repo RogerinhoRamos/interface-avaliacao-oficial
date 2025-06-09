@@ -30,6 +30,9 @@
     .periodo-select { margin-top: 20px; text-align: center; }
     .periodo-select select { padding: 8px; font-size: 1em; border-radius: 6px; }
     .btn-exportar { margin: 20px auto; display: block; background: #0066cc; color: #fff; padding: 10px 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+    .filtros { margin: 20px 0; text-align: center; }
+    .filtros label { margin-right: 10px; font-weight: bold; }
+    .filtros select { padding: 6px; margin-right: 10px; border-radius: 4px; }
     footer { text-align: center; padding: 30px 10px; font-size: 0.85em; color: #999; background: #fff; }
   </style>
 </head>
@@ -41,6 +44,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="colaborador">Colaborador</button>
     <button class="tab-btn" data-tab="equipe">Equipe/Função</button>
+    <button class="tab-btn" data-tab="analises">Análises</button>
   </div>
 
   <div id="colaborador" class="tab-content active">
@@ -79,13 +83,26 @@
     </div>
   </div>
 
+  <div id="analises" class="tab-content">
+    <div class="filtros">
+      <label for="filtroColab">Colaborador(es):</label>
+      <select id="filtroColab" multiple></select>
+      <label for="filtroPeriodo">Período:</label>
+      <select id="filtroPeriodo">
+        <option>2022</option>
+        <option>2023</option>
+        <option selected>2024</option>
+        <option>2025</option>
+      </select>
+    </div>
+    <canvas id="graficoRadar" width="600" height="400"></canvas>
+  </div>
+
   <footer>
-    &copy; 2025 Painel de Avaliação - Todos os direitos reservados.
+    &copy; 2025 Painel de Avaliação - Todos os direitos reservados.<br/>
   </footer>
 
   <script>
-    const avaliacoes = JSON.parse(localStorage.getItem('avaliacoes') || '[]');
-
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -95,104 +112,31 @@
       });
     });
 
-    document.querySelector('label[for="excelInput"]').addEventListener('click', () => {
-      document.getElementById('excelInput').click();
-    });
-
-    document.getElementById('excelInput').addEventListener('change', async function(event) {
+    document.getElementById("excelInput").addEventListener("change", function (event) {
       const file = event.target.files[0];
       if (!file) return;
-
-      const progressBar = document.getElementById('progressBar');
-      progressBar.style.width = '10%';
-
       const reader = new FileReader();
-      reader.onload = function(e) {
-        progressBar.style.width = '30%';
+      reader.onload = function (e) {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-
-        progressBar.style.width = '50%';
-        const sheet = workbook.Sheets["Organograma"] || workbook.Sheets[workbook.SheetNames[0]];
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
-
-        progressBar.style.width = '70%';
-        const container = document.getElementById('cardsContainer');
-        container.innerHTML = '';
-        let count = 0;
-
-        const periodo = document.getElementById('periodoSelecionado').value;
-
+        const container = document.getElementById("cardsContainer");
+        container.innerHTML = "";
         json.forEach(row => {
-          const nome = row['Nome'] || row['nome'];
-          const funcao = row['Detalhes da linha 1'] || row['Função'] || row['funcao'];
-          const local = row['Detalhes da linha 3'] || row['Local'] || '';
-
+          const nome = row["Nome"] || row["nome"] || "";
+          const funcao = row["Função"] || row["funcao"] || "";
           if (!nome || !funcao) return;
-
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          card.innerHTML = `
-            <div class="card-header">
-              <div>
-                <strong>Colaborador:</strong> ${nome}<br/>
-                <strong>Função:</strong> ${funcao}${local ? '<br/><strong>Local:</strong> ' + local : ''}<br/>
-                <strong>Período:</strong> ${periodo}
-              </div>
-              <div class="status">Avaliação não iniciada</div>
-            </div>
-            <div class="competencia">
-              ${['1. Age como um especialista','2. Colabora competentemente e com integridade','3. Foco nos negócios','4. Profissionalismo','5. Toma iniciativas e age com foco'].map((pilar, i) => {
-                const valorAtual = (avaliacoes.find(a => a.nome === nome && a.pilar === pilar && a.periodo === periodo) || {}).nota || '';
-                return `
-                <div class="pilar">
-                  <label>${pilar}</label>
-                  <select data-nome="${nome}" data-pilar="${pilar}" onchange="salvarAvaliacao(this)">
-                    <option value="">Selecione</option>
-                    <option${valorAtual==='A'?' selected':''}>A</option>
-                    <option${valorAtual==='B'?' selected':''}>B</option>
-                    <option${valorAtual==='C'?' selected':''}>C</option>
-                  </select>
-                </div>`;
-              }).join('')}
-            </div>
-          `;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `<div class="card-header">
+            <div><strong>${nome}</strong><br/><em>${funcao}</em></div>
+            <div class="status">Não avaliado</div>
+          </div>`;
           container.appendChild(card);
-          count++;
         });
-
-        progressBar.style.width = '100%';
-        const feedback = document.getElementById('uploadFeedback');
-        feedback.innerText = `✅ ${count} colaborador(es) carregado(s) com sucesso!`;
-        feedback.style.color = '#28a745';
-        feedback.style.opacity = '1';
       };
       reader.readAsArrayBuffer(file);
-    });
-
-    function salvarAvaliacao(select) {
-      const nome = select.dataset.nome;
-      const pilar = select.dataset.pilar;
-      const valor = select.value;
-      const periodo = document.getElementById('periodoSelecionado').value;
-
-      const index = avaliacoes.findIndex(a => a.nome === nome && a.pilar === pilar && a.periodo === periodo);
-
-      if (index > -1) {
-        avaliacoes[index].nota = valor;
-      } else {
-        avaliacoes.push({ nome, pilar, nota: valor, periodo });
-      }
-
-      localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes));
-    }
-
-    document.getElementById('exportarDados').addEventListener('click', () => {
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(avaliacoes);
-      XLSX.utils.book_append_sheet(wb, ws, 'Avaliações');
-      XLSX.writeFile(wb, 'avaliacoes.xlsx');
     });
   </script>
 </body>
